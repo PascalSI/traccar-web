@@ -16,6 +16,7 @@
 package org.traccar.web.client.view;
 
 import com.google.gwt.core.client.GWT;
+import static com.google.gwt.core.client.HttpThrowableReporter.report;
 import com.sencha.gxt.data.shared.ListStore;
 import com.sencha.gxt.widget.core.client.tips.ToolTip;
 import com.sencha.gxt.widget.core.client.tips.ToolTipConfig;
@@ -27,8 +28,15 @@ import org.traccar.web.shared.model.*;
 import java.util.*;
 import org.traccar.web.client.utils.JsonXmlParser;
 
+//private class String LastPowerStatus() {
+// methods: setPower, getPower.
+//}
+
 public class PositionInfoPopup {
     private final static Messages i18n = GWT.create(Messages.class);
+    private final static String GT06PowerKeyName = "power";
+    private String lastPowerStatus = null;
+    private Long lastPowerStatusUpdate = null;
 
     final ToolTip toolTip;
     final ListStore<Device> deviceStore;
@@ -40,6 +48,29 @@ public class PositionInfoPopup {
         
         this.alwaysVisibleOthers = new HashSet<>();
         Collections.addAll(alwaysVisibleOthers, "ignition", "battery", "power");
+    }
+    
+    public void setLastPowerStatus(String powerStatus, Long serverTime) {
+        lastPowerStatus = powerStatus;
+        lastPowerStatusUpdate = serverTime;
+    }
+    
+    // Here is an error!
+    public String getLastPowerStatus(Long serverTime) {
+        long timeSinceLastUpdate; // = serverTime - lastPowerStatusUpdate;
+        long oneHour = 3600 * 1000; // miliseconds
+        
+        if (lastPowerStatusUpdate != null) {
+            timeSinceLastUpdate = serverTime - lastPowerStatusUpdate;
+    //        consoleLog(Long.valueOf(timeSinceLastUpdate).toString());
+            if (timeSinceLastUpdate < oneHour) {
+                return lastPowerStatus;
+            } else {
+                return null;
+            }
+        } else {
+            return null;
+        }
     }
 
     public void show(int x, int y, final Position position) {
@@ -68,6 +99,11 @@ public class PositionInfoPopup {
             }
         }
         String other = position.getOther();
+        
+//        device.getSensors();
+
+        consoleLog(other);
+        
         if (other != null) {
             Map<String, Sensor> sensors = new HashMap<>(device.getSensors().size());
             for (Sensor sensor : device.getSensors()) {
@@ -87,6 +123,23 @@ public class PositionInfoPopup {
             // Alarm is not synchronized properly, remove it from device pop-up temporary
             if (sensorData.containsKey("alarm")) {
                 sensorData.remove("alarm");
+            }
+            
+            // Test only
+            if (lastPowerStatus != null && sensorData.containsKey("power")) {
+                sensorData.remove("power");
+            }
+            
+            // Error somewhere here
+            if ("gt06".equals(device.getProtocol())) {
+                if (sensorData.containsKey(GT06PowerKeyName)) {
+                    setLastPowerStatus(sensorData.get(GT06PowerKeyName).toString(), position.getServerTime().getTime());
+                } else {
+                    // without 3 lines below pop up was shown
+                    String lastPwrStatus = getLastPowerStatus(position.getServerTime().getTime());
+                    consoleLog("Applied last power status: " + lastPwrStatus);
+                    sensorData.put(GT06PowerKeyName, lastPwrStatus);
+                }
             }
 
             // write values
@@ -195,4 +248,12 @@ public class PositionInfoPopup {
         }
         return valueText;
     }
+    
+    public static native void alert(String msg) /*-{
+        $wnd.alert(msg);
+    }-*/;
+    
+    public static native void consoleLog(String msg) /*-{
+        $wnd.console.log(msg);
+    }-*/;
 }
