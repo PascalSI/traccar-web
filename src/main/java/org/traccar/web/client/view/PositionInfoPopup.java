@@ -55,14 +55,13 @@ public class PositionInfoPopup {
         lastPowerStatusUpdate = serverTime;
     }
     
-    // Here is an error!
     public String getLastPowerStatus(Long serverTime) {
-        long timeSinceLastUpdate; // = serverTime - lastPowerStatusUpdate;
+        long timeSinceLastUpdate;
         long oneHour = 3600 * 1000; // miliseconds
         
         if (lastPowerStatusUpdate != null) {
             timeSinceLastUpdate = serverTime - lastPowerStatusUpdate;
-    //        consoleLog(Long.valueOf(timeSinceLastUpdate).toString());
+            consoleLog("timeSinceLastUpdate: " + Long.valueOf(timeSinceLastUpdate).toString());
             if (timeSinceLastUpdate < oneHour) {
                 return lastPowerStatus;
             } else {
@@ -102,8 +101,6 @@ public class PositionInfoPopup {
         
 //        device.getSensors();
 
-        consoleLog(other);
-        
         if (other != null) {
             Map<String, Sensor> sensors = new HashMap<>(device.getSensors().size());
             for (Sensor sensor : device.getSensors()) {
@@ -125,20 +122,15 @@ public class PositionInfoPopup {
                 sensorData.remove("alarm");
             }
             
-            // Test only
-            if (lastPowerStatus != null && sensorData.containsKey("power")) {
-                sensorData.remove("power");
-            }
-            
-            // Error somewhere here
             if ("gt06".equals(device.getProtocol())) {
                 if (sensorData.containsKey(GT06PowerKeyName)) {
                     setLastPowerStatus(sensorData.get(GT06PowerKeyName).toString(), position.getServerTime().getTime());
                 } else {
-                    // without 3 lines below pop up was shown
                     String lastPwrStatus = getLastPowerStatus(position.getServerTime().getTime());
                     consoleLog("Applied last power status: " + lastPwrStatus);
-                    sensorData.put(GT06PowerKeyName, lastPwrStatus);
+                    if (lastPwrStatus != null) {
+                        sensorData.put(GT06PowerKeyName, lastPwrStatus);
+                    }
                 }
             }
 
