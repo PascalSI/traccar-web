@@ -136,6 +136,9 @@ public class GroupsDialog implements SelectionChangedEvent.SelectionChangedHandl
     
     @UiField
     TextButton saveButton;
+    
+    @UiField
+    TextButton clearSelectionButton;
 
     final GroupStore groupStore;
     private List<Group> newGroups;
@@ -292,5 +295,10 @@ public class GroupsDialog implements SelectionChangedEvent.SelectionChangedHandl
     @UiHandler("cancelButton")
     public void onCancelClicked(SelectEvent event) {
         window.hide();
+    }
+    
+    @UiHandler("clearSelectionButton")
+    public void onClearSelectionClicked(SelectEvent event) {
+        grid.getSelectionModel().deselectAll();
     }
 }
